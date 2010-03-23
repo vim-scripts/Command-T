@@ -30,7 +30,7 @@ let g:command_t_loaded = 1
 command CommandT :call <SID>CommandTShow()
 command CommandTFlush :call <SID>CommandTFlush()
 
-nmap <unique> <silent> <Leader>t :CommandT<CR>
+silent! nmap <unique> <silent> <Leader>t :CommandT<CR>
 
 function s:CommandTRubyWarning()
   echohl WarningMsg
@@ -129,9 +129,15 @@ ruby << EOF
     require 'vim'
     require 'command-t'
   rescue LoadError
-    lib = "#{ENV['HOME']}/.vim/ruby"
-    raise if $LOAD_PATH.include?(lib)
-    $LOAD_PATH << lib
+    load_path_modified = false
+    Vim::evaluate('&runtimepath').to_s.split(',').each do |path|
+      lib = "#{path}/ruby"
+      if !$LOAD_PATH.include?(lib) and File.exist?(lib)
+        $LOAD_PATH << lib
+        load_path_modified = true
+      end
+    end
+    raise unless load_path_modified
     retry
   end
 
