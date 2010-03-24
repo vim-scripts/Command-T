@@ -21,10 +21,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+require 'command-t/base'
+require 'command-t/match_window'
+require 'command-t/prompt'
+
 module CommandT
   class Controller
     def initialize
       @prompt = Prompt.new
+      @max_height = get_number('g:CommandTMaxHeight') || 0
       @scanner = CommandT::Base.new nil,
         :max_files              => get_number('g:CommandTMaxFiles'),
         :max_depth              => get_number('g:CommandTMaxDepth'),
@@ -153,8 +158,16 @@ module CommandT
       str.gsub(/[ \\|%#"]/, '\\\\\0')
     end
 
+    def default_open_command
+      if !get_bool('&hidden') && get_bool('&modified')
+        'sp'
+      else
+        'e'
+      end
+    end
+
     def open_selection selection, options = {}
-      command = options[:command] || 'e'
+      command = options[:command] || default_open_command
       selection = sanitize_path_string selection
       VIM::command "silent #{command} #{selection}"
     end
@@ -201,10 +214,12 @@ module CommandT
     end
 
     # Returns the desired maximum number of matches, based on available
-    # vertical space.
+    # vertical space and the g:CommandTMaxHeight option.
     def match_limit
       limit = VIM::Screen.lines - 5
-      limit < 0 ? 1 : limit
+      limit = 1 if limit < 0
+      limit = [limit, @max_height].min if @max_height > 0
+      limit
     end
 
     def list_matches
