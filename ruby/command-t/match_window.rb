@@ -1,4 +1,4 @@
-# Copyright 2010 Wincent Colaiuta. All rights reserved.
+# Copyright 2010-2011 Wincent Colaiuta. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,7 @@ module CommandT
 
     def initialize options = {}
       @prompt = options[:prompt]
+      @reverse_list = options[:match_window_reverse]
 
       # save existing window dimensions so we can restore them later
       @windows = []
@@ -169,9 +170,10 @@ module CommandT
     end
 
     def matches= matches
+      matches = matches.reverse if @reverse_list
       if matches != @matches
-        @matches =  matches
-        @selection = 0
+        @matches = matches
+        @selection = @reverse_list ? @matches.length - 1 : 0
         print_matches
       end
     end
